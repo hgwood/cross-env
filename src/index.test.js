@@ -1,9 +1,11 @@
 import crossSpawnMock from 'cross-spawn'
+import isWindowsMock from 'is-windows'
 
 const crossEnv = require('.')
 
 beforeEach(() => {
   crossSpawnMock.__mock.reset()
+  isWindowsMock.__mock.reset()
 })
 
 it(`should set environment variables and run the remaining command`, () => {

@@ -1,3 +1,4 @@
+import isWindows from 'is-windows'
 import {spawn} from 'cross-spawn'
 import commandConvert from './command'
 
@@ -6,7 +7,21 @@ module.exports = crossEnv
 const envSetterRegex = /(\w+)=('(.+)'|"(.+)"|(.+))/
 
 function crossEnv(args) {
-  const [command, commandArgs, env] = getCommandArgsAndEnvVars(args)
+  const [envSetters, command, commandArgs] = pivot(
+    args,
+    arg => !envSetterRegex.test(arg),
+  )
+
+  if (isWindows()) {
+  } else {
+    return [
+      `${envSetters.join(' ')} ${quote(command)}`,
+      ...commandArgs.map(quote),
+    ]
+  }
+  const [command, commandArgs, env] = isWindows() ?
+    getCommandArgsAndEnvVars(args) :
+    [args.map(arg => `"${arg}"`).join(' '), [], process.env]
   if (command) {
     const proc = spawn(command, commandArgs, {
       stdio: 'inherit',
@@ -49,4 +64,20 @@ function getEnvVars() {
     envVars.APPDATA = process.env.APPDATA
   }
   return envVars
+}
+
+function quote(arg) {
+  return `'${arg.replace(/'/g, "\\'")}'`
+}
+
+function pivot(array, predicate) {
+  const pivotIndex = array.findIndex(predicate)
+  if (pivotIndex < 0) {
+    return [[], undefined, []]
+  }
+  return [
+    array.slice(0, pivotIndex),
+    array[pivotIndex],
+    array.slice(pivotIndex + 1),
+  ]
 }
